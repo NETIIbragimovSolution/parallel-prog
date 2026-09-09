@@ -1,7 +1,6 @@
 // Лабораторная работа: параллельное численное интегрирование.
 // Вариант 1: f(x) = (1+x)/(2+3x)^2, интервал [1;3].
 // Метод: левые прямоугольники.
-// Реализовано двумя способами: POSIX threads и std::thread.
 
 #include <chrono>
 #include <cmath>
@@ -13,7 +12,7 @@
 #include <thread>
 #include <vector>
 
-// ---------- Функция по варианту и её первообразная ----------
+// Функция по варианту и её первообразная
 
 const double A = 1.0; // левая граница интервала
 const double B = 3.0; // правая граница интервала
@@ -34,9 +33,8 @@ double exact_integral() {
     return antiderivative(B) - antiderivative(A);
 }
 
-// ---------- Метод левых прямоугольников ----------
+// Метод левых прямоугольников 
 
-// Сумма f(x_i) по индексам [start, end) без умножения на шаг h.
 double partial_sum(long long start, long long end, double a, double h) {
     double sum = 0.0;
     for (long long i = start; i < end; ++i) {
@@ -61,7 +59,7 @@ std::vector<std::pair<long long, long long>> split_range(long long n, int thread
 
 using Clock = std::chrono::steady_clock;
 
-// ---------- POSIX threads ----------
+// POSIX 
 
 struct PosixArg {
     long long start, end;
@@ -100,7 +98,7 @@ double run_posix(long long n, int threads, double a, double h, double& result) {
     return std::chrono::duration<double>(t1 - t0).count();
 }
 
-// ---------- std::thread ----------
+// std::thread 
 
 double run_stdthread(long long n, int threads, double a, double h, double& result) {
     auto chunks = split_range(n, threads);
@@ -122,7 +120,7 @@ double run_stdthread(long long n, int threads, double a, double h, double& resul
     return std::chrono::duration<double>(t1 - t0).count();
 }
 
-// ---------- Замер со усреднением по нескольким запускам ----------
+// Замер со усреднением по нескольким запускам 
 
 const int REPEATS = 3;
 
@@ -142,7 +140,7 @@ double avg_time_stdthread(long long n, int threads, double a, double h, double& 
     return total_time / REPEATS;
 }
 
-// ---------- Таблица результатов тестирования (для CSV и консоли) ----------
+// Таблица результатов тестирования (для CSV и консоли) 
 
 struct Row {
     int threads;
@@ -153,8 +151,6 @@ struct Row {
 };
 
 void print_table(const std::string& title, const std::vector<Row>& rows) {
-    // Кириллица в UTF-8 многобайтовая, поэтому std::setw (считает байты)
-    // не годится для заголовка — выравниваем его вручную пробелами.
     std::cout << "\n" << title << "\n";
     std::cout << "Потоки    Время (с)     Результат       Ускорение   Эффект-ть (%)\n";
     std::cout << std::fixed << std::setprecision(6);
@@ -210,7 +206,6 @@ int main() {
 
     double h = (B - A) / static_cast<double>(n);
 
-    // ---- Тестирование производительности на каждом потоке ----
     std::cout << "\n=== Тестирование производительности (каждый замер усреднён по "
                << REPEATS << " запускам) ===\n";
 
@@ -224,7 +219,6 @@ int main() {
 
     std::cout << "\nCSV сохранены в results_posix.csv и results_stdthread.csv\n";
 
-    // ---- Основной расчёт: сравнение многопоточности и однопоточности ----
     std::cout << "\n=== Основной расчёт (сравнение многопоточности и однопоточности) ===\n";
 
     double result_posix_1, result_posix_main, result_thread_1, result_thread_main;
@@ -246,7 +240,6 @@ int main() {
                << " с, результат = " << result_thread_main
                << ", ускорение = " << (time_thread_1 / time_thread_main) << "\n";
 
-    // ---- Точность вычислений ----
     double exact = exact_integral();
     double error_main = std::fabs(result_posix_main - exact);
     std::cout << "\n=== Точность ===\n";
