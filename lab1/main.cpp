@@ -4,13 +4,14 @@
 
 #include <chrono>
 #include <cmath>
-#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <numeric>
 #include <pthread.h>
 #include <thread>
 #include <vector>
+
+#include "report.hpp"
 
 // Функция по варианту и её первообразная
 
@@ -138,56 +139,6 @@ double avg_time_stdthread(long long n, int threads, double a, double h, double& 
         total_time += run_stdthread(n, threads, a, h, result);
     }
     return total_time / REPEATS;
-}
-
-// Таблица результатов тестирования (для CSV и консоли) 
-
-struct Row {
-    int threads;
-    double time_sec;
-    double result;
-    double speedup;
-    double efficiency_percent;
-};
-
-void print_table(const std::string& title, const std::vector<Row>& rows) {
-    std::cout << "\n" << title << "\n";
-    std::cout << "Потоки    Время (с)     Результат       Ускорение   Эффект-ть (%)\n";
-    std::cout << std::fixed << std::setprecision(6);
-    for (const auto& r : rows) {
-        std::cout << std::left << std::setw(10) << r.threads
-                   << std::setw(14) << r.time_sec
-                   << std::setw(16) << r.result
-                   << std::setw(12) << r.speedup
-                   << std::setw(16) << r.efficiency_percent << "\n";
-    }
-}
-
-void write_csv(const std::string& filename, const std::vector<Row>& rows) {
-    std::ofstream out(filename);
-    out << "threads,time_sec,result,speedup,efficiency_percent\n";
-    out << std::fixed << std::setprecision(9);
-    for (const auto& r : rows) {
-        out << r.threads << "," << r.time_sec << "," << r.result << ","
-            << r.speedup << "," << r.efficiency_percent << "\n";
-    }
-}
-
-// Прогоняет технологию (POSIX или std::thread) для потоков 1..max_threads
-// и заполняет таблицу ускорения/эффективности относительно 1 потока.
-template <typename RunFn>
-std::vector<Row> benchmark(RunFn run, long long n, int max_threads, double a, double h) {
-    std::vector<Row> rows;
-    double base_time = 0.0;
-    for (int t = 1; t <= max_threads; ++t) {
-        double result = 0.0;
-        double time_sec = run(n, t, a, h, result);
-        if (t == 1) base_time = time_sec;
-        double speedup = base_time / time_sec;
-        double efficiency = speedup / t * 100.0;
-        rows.push_back({t, time_sec, result, speedup, efficiency});
-    }
-    return rows;
 }
 
 int main() {

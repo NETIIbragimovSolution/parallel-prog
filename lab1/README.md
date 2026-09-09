@@ -15,7 +15,7 @@
 ## Сборка и запуск
 
 ```bash
-g++ -O2 -std=c++17 -pthread main.cpp -o integrate
+g++ -O2 -std=c++17 -pthread main.cpp report.cpp -o integrate
 ./integrate
 ```
 
