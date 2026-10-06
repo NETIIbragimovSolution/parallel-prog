@@ -1,0 +1,102 @@
+digraph ActivityDiagram {
+    rankdir=LR;
+    bgcolor="white";
+    nodesep=0.35;
+    node [fontname="Helvetica", fontsize=11];
+    edge [fontname="Helvetica", fontsize=10];
+
+    start [shape=circle, style=filled, fillcolor=black, width=0.25, fixedsize=true, label=""];
+
+    input   [shape=box, style="rounded,filled", fillcolor="#D6EAF8", label="Ввод данных"];
+    warmup  [shape=box, style="rounded,filled", fillcolor="#D6EAF8", label="Прогрев CPU"];
+
+    dec_loop  [shape=diamond, style=filled, fillcolor="#FADBD8", label="Ещё есть\nпотоки для теста?"];
+
+    split [shape=box, style="rounded,filled", fillcolor="#D6EAF8", label="Разделить работу\nмежду потоками"];
+
+    // Начало отсчёта времени
+    t_start [shape=box, style="rounded,filled,bold", fillcolor="#FCF3CF", color="#B7950B", penwidth=2,
+             label="Засечь время t0\n(начало отсчёта)"];
+
+    // Передача сигнала (send signal action): главный поток запускает рабочие
+    send_start [shape=box, class="send", style=filled, fillcolor="#FDEBD0", margin="0.15,0.08",
+                label="Запуск потоков\n(create)"];
+
+    fork1 [shape=box, style=filled, fillcolor=black, width=0.04, height=2.6, fixedsize=true, label=""];
+
+    // Рабочие потоки: приём сигнала -> вычисление -> передача сигнала
+    r1 [shape=box, class="recv", style=filled, fillcolor="#FDEBD0", margin="0.2,0.06", label="Приём\nсигнала старта"];
+    r2 [shape=box, class="recv", style=filled, fillcolor="#FDEBD0", margin="0.2,0.06", label="Приём\nсигнала старта"];
+    rN [shape=box, class="recv", style=filled, fillcolor="#FDEBD0", margin="0.2,0.06", label="Приём\nсигнала старта"];
+
+    th1    [shape=box, style="rounded,filled", fillcolor="#D5F5E3", label="Поток 1:\nсвоя часть суммы"];
+    th2    [shape=box, style="rounded,filled", fillcolor="#D5F5E3", label="Поток 2:\nсвоя часть суммы"];
+    thN    [shape=box, style="rounded,filled", fillcolor="#D5F5E3", label="Поток N:\nсвоя часть суммы"];
+
+    s1 [shape=box, class="send", style=filled, fillcolor="#FDEBD0", margin="0.15,0.06", label="Сигнал\n«поток завершён»"];
+    s2 [shape=box, class="send", style=filled, fillcolor="#FDEBD0", margin="0.15,0.06", label="Сигнал\n«поток завершён»"];
+    sN [shape=box, class="send", style=filled, fillcolor="#FDEBD0", margin="0.15,0.06", label="Сигнал\n«поток завершён»"];
+
+    thdots  [shape=plaintext, label="...", fontsize=16];
+    thdots2 [shape=plaintext, label="...", fontsize=16];
+    thdots3 [shape=plaintext, label="...", fontsize=16];
+
+    join1 [shape=box, style=filled, fillcolor=black, width=0.04, height=2.6, fixedsize=true, label=""];
+
+    // Приём события (receive event action): главный поток дожидается всех
+    recv_done [shape=box, class="recv", style=filled, fillcolor="#FDEBD0", margin="0.22,0.08",
+               label="Ожидание завершения\nвсех потоков (join)"];
+
+    // Конец отсчёта времени
+    t_stop [shape=box, style="rounded,filled,bold", fillcolor="#FCF3CF", color="#B7950B", penwidth=2,
+            label="Засечь время t1\n(конец отсчёта)\nT = t1 − t0"];
+
+    reduce [shape=box, style="rounded,filled", fillcolor="#D6EAF8", label="Собрать общий\nрезультат"];
+    record [shape=box, style="rounded,filled", fillcolor="#D6EAF8", label="Записать время\nи ускорение"];
+
+    save_csv [shape=box, style="rounded,filled", fillcolor="#D6EAF8", label="Сохранить\nтаблицу"];
+
+    main_calc [shape=box, style="rounded,filled", fillcolor="#D6EAF8", label="Сравнить один поток\nи несколько потоков"];
+
+    exact    [shape=box, style="rounded,filled", fillcolor="#D6EAF8", label="Посчитать\nпогрешность"];
+    dec_acc  [shape=diamond, style=filled, fillcolor="#FADBD8", label="Точность\nдостаточна?"];
+    out_yes  [shape=box, style="rounded,filled", fillcolor="#D5F5E3", label="Точность\nдостигнута"];
+    out_no   [shape=box, style="rounded,filled", fillcolor="#F5B7B1", label="Точность\nне достигнута"];
+
+    end_node [shape=doublecircle, style=filled, fillcolor=black, width=0.3, fixedsize=true, label=""];
+
+    start -> input -> warmup -> dec_loop;
+    dec_loop -> split [label="да"];
+    split -> t_start -> send_start -> fork1;
+
+    fork1 -> r1;
+    fork1 -> r2;
+    fork1 -> thdots [style=invis];
+    fork1 -> rN;
+    r1 -> th1 -> s1 -> join1;
+    r2 -> th2 -> s2 -> join1;
+    rN -> thN -> sN -> join1;
+    thdots -> thdots2 -> thdots3 -> join1 [style=invis];
+    // Порядок ветвей сверху вниз: 1, 2, ..., N
+    { rank=same; r1 -> r2 -> thdots -> rN [style=invis]; }
+    { rank=same; th1 -> th2 -> thdots2 -> thN [style=invis]; }
+    { rank=same; s1 -> s2 -> thdots3 -> sN [style=invis]; }
+
+    join1 -> recv_done -> t_stop -> reduce -> record -> dec_loop;
+    dec_loop -> save_csv [label="нет"];
+    save_csv -> main_calc -> exact -> dec_acc;
+    dec_acc -> out_yes [label="да"];
+    dec_acc -> out_no [label="нет"];
+    out_yes -> end_node;
+    out_no -> end_node;
+
+    // Легенда
+    subgraph cluster_legend {
+        label="Обозначения"; fontname="Helvetica"; fontsize=11; style="rounded"; color="#999999";
+        lg_send [shape=box, class="send", style=filled, fillcolor="#FDEBD0", margin="0.15,0.05", label="Передача сигнала\n(send signal action)"];
+        lg_recv [shape=box, class="recv", style=filled, fillcolor="#FDEBD0", margin="0.2,0.05", label="Приём события\n(receive event action)"];
+        lg_time [shape=box, style="rounded,filled,bold", fillcolor="#FCF3CF", color="#B7950B", penwidth=2, label="Отсчёт времени"];
+        lg_send -> lg_recv -> lg_time [style=invis];
+    }
+    end_node -> lg_send [style=invis];
+}

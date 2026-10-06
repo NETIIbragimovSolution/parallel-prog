@@ -1,4 +1,6 @@
-integrate
+sequential
+parallel_posix
+parallel_stdthread
 results_posix.csv
 results_stdthread.csv
 plots/
