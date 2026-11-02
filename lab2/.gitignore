@@ -1,0 +1,7 @@
+prime_delegation
+output/
+report/
+screenshots/
+scripts/
+*.md
+.DS_Store
